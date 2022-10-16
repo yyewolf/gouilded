@@ -1,4 +1,4 @@
-module gouilded
+module github.com/yyewolf/gouilded
 
 go 1.19
 
