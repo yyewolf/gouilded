@@ -20,14 +20,8 @@ type ServerMember struct {
 	IsOwner bool `json:"isOwner"`
 }
 
-type ServerMemberSummary struct {
-	User *UserSummary `json:"user"`
-
-	RoleIds []int `json:"roleIds"`
-}
-
 type ServerMemberBan struct {
-	User *UserSummary `json:"user"`
+	User *User `json:"user"`
 
 	// The reason for the ban as submitted by the banner
 	Reason string `json:"reason"`

@@ -36,32 +36,6 @@ func TestServerMember_UnmarshallJSON(t *testing.T) {
 	assert.Equal(t, sm.ServerMember.Nickname, "Professor Chaos")
 }
 
-type serverMemberSummaryTest struct {
-	ServerMemberSummary *ServerMemberSummary `json:"serverMemberSummary,omitempty"`
-}
-
-func TestServerMemberSummary_UnmarshallJSON(t *testing.T) {
-	sms := serverMemberSummaryTest{
-		ServerMemberSummary: &ServerMemberSummary{},
-	}
-
-	data := []byte(`{
-		"user": {
-		  "id": "Ann6LewA",
-		  "type": "user",
-		  "name": "Leopold Stotch"
-		},
-		"roleIds": []
-	  }`)
-
-	if err := json.Unmarshal(data, sms.ServerMemberSummary); err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, sms.ServerMemberSummary.User.UserID, "Ann6LewA")
-	assert.Equal(t, sms.ServerMemberSummary.User.Name, "Leopold Stotch")
-}
-
 type serverMemberBanTest struct {
 	ServerMemberBan *ServerMemberBan
 }
