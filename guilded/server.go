@@ -1,5 +1,10 @@
 package guilded
 
+import (
+	"encoding/json"
+	"time"
+)
+
 type ServerType string
 
 const (
@@ -18,7 +23,7 @@ type Server struct {
 	ID string `json:"id"`
 
 	// The ID of the user who created this server
-	OwnerID string `json:"ownerId"`
+	CreatedBy *User `json:"-"`
 
 	// The type of server designated from the server's settings page
 	Type ServerType `json:"type"`
@@ -38,17 +43,32 @@ type Server struct {
 	Avatar string `json:"avatar"`
 
 	// The banner image associated with the server
-	Banner string
+	Banner string `json:"banner"`
 
 	// The timezone associated with the server
-	Timezone string
+	Timezone string `json:"timezone"`
 
 	// The verified status of the server
-	IsVerified bool
+	IsVerified bool `json:"isVerified"`
 
 	// The channel ID of the default channel of the server. Useful for welcome messages
-	DefaultChannelId string
+	DefaultChannelId string `json:"defaultChannelId"`
 
 	// The ISO 8601 timestamp that the server was created at
-	CreatedAt string
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (s *Server) UnmarshalJSON(data []byte) error {
+	type Alias Server
+	aux := &struct {
+		*Alias
+		OwnerID string `json:"ownerId"`
+	}{
+		Alias: (*Alias)(s),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	s.CreatedBy = &User{UserID: aux.OwnerID}
+	return nil
 }
