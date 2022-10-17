@@ -17,118 +17,58 @@ func TestMessage_UnmarshalJSON(t *testing.T) {
 	}
 
 	data := []byte(`{
-		"id": "b943384a-d951-4323-8e26-8e3e6b7c431a",
-		"content": {
-		  "object": "value",
-		  "document": {
-			"object": "document",
-			"data": {},
-			"nodes": [
+		"id": "00000000-0000-0000-0000-000000000000",
+		"type": "default",
+		"serverId": "wlVr3Ggl",
+		"channelId": "00000000-0000-0000-0000-000000000000",
+		"content": "Hello **world**!",
+		"embeds": [
+		  {
+			"title": "embed title",
+			"description": "embeds support a **different** __subset__ *of* markdown than other markdown fields. <@Ann6LewA>\n\n [links](https://www.guilded.gg) Stime!! ttyl",
+			"url": "https://www.guilded.gg",
+			"color": 6118369,
+			"timestamp": "2022-04-12T22:14:36.737Z",
+			"footer": {
+			  "icon_url": "https://www.guilded.gg/asset/Logos/logomark/Color/Guilded_Logomark_Color.png",
+			  "text": "footer text"
+			},
+			"thumbnail": {
+			  "url": "https://www.guilded.gg/asset/Logos/logomark/Color/Guilded_Logomark_Color.png"
+			},
+			"image": {
+			  "url": "https://www.guilded.gg/asset/Logos/logomark_wordmark/Color/Guilded_Logomark_Wordmark_Color.png"
+			},
+			"author": {
+			  "name": "Gil",
+			  "url": "https://www.guilded.gg",
+			  "icon_url": "https://www.guilded.gg/asset/Default/Gil-md.png"
+			},
+			"fields": [
 			  {
-				"object": "block",
-				"type": "paragraph",
-				"data": {},
-				"nodes": [
-				  {
-					"object": "text",
-					"leaves": [
-					  {
-						"object": "leaf",
-						"text": "cool message with an ",
-						"marks": []
-					  }
-					]
-				  },
-				  {
-					"object": "inline",
-					"type": "reaction",
-					"data": {
-					  "reaction": {
-						"id": 90001815,
-						"customReactionId": 90001815
-					  }
-					},
-					"nodes": [
-					  {
-						"object": "text",
-						"leaves": [
-						  {
-							"object": "leaf",
-							"text": ":tada:",
-							"marks": []
-						  }
-						]
-					  }
-					]
-				  },
-				  {
-					"object": "text",
-					"leaves": [
-					  {
-						"object": "leaf",
-						"text": " emoji, some ",
-						"marks": []
-					  },
-					  {
-						"object": "leaf",
-						"text": "bold formatting",
-						"marks": [
-						  {
-							"object": "mark",
-							"type": "italic",
-							"data": {}
-						  }
-						]
-					  },
-					  {
-						"object": "leaf",
-						"text": ", maybe even a ",
-						"marks": []
-					  }
-					]
-				  },
-				  {
-					"object": "inline",
-					"type": "reaction",
-					"data": {
-					  "reaction": {
-						"id": 294637,
-						"customReactionId": 294637
-					  }
-					},
-					"nodes": [
-					  {
-						"object": "text",
-						"leaves": [
-						  {
-							"object": "leaf",
-							"text": ":thinkingwithblobs:",
-							"marks": []
-						  }
-						]
-					  }
-					]
-				  },
-				  {
-					"object": "text",
-					"leaves": [
-					  {
-						"object": "leaf",
-						"text": " custom emoji?",
-						"marks": []
-					  }
-					]
-				  }
-				]
+				"name": "hello",
+				"value": "these are fields"
+			  },
+			  {
+				"name": "~~help i have been crossed out~~",
+				"value": "~~oh noes~~",
+				"inline": true
+			  },
+			  {
+				"name": "another inline",
+				"value": "field",
+				"inline": true
 			  }
 			]
 		  }
-		}
+		],
+		"createdAt": "2021-06-15T20:15:00.706Z",
+		"createdBy": "Ann6LewA"
 	  }`)
 
 	if err := json.Unmarshal(data, v.Message); err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, v.Message.ID, "b943384a-d951-4323-8e26-8e3e6b7c431a")
+	assert.Equal(t, v.Message.ID, "00000000-0000-0000-0000-000000000000")
 }
