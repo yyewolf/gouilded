@@ -20,7 +20,7 @@ const (
 
 type Server struct {
 	// The id of the server
-	ID string `json:"id"`
+	ServerID string `json:"id"`
 
 	// The ID of the user who created this server
 	CreatedBy *User `json:"-"`

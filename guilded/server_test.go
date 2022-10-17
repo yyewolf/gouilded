@@ -31,6 +31,6 @@ func TestServer_UnmarshallJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, s.Server.ID, "wlVr3Ggl")
+	assert.Equal(t, s.Server.ServerID, "wlVr3Ggl")
 	assert.Equal(t, s.Server.CreatedBy.UserID, "Ann6LewA")
 }
