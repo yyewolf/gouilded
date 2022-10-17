@@ -51,7 +51,7 @@ type Message struct {
 	Author *User `json:"-"`
 
 	// CreatedByWebhookID is the ID of the webhook that created the message
-	CreatedByWebhookID string `json:"createdByWebhookId"`
+	CreatedByWebhook *Webhook `json:"-"`
 
 	// UpdatedAt is the time the message was last updated at in ISO 8601 format
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -62,6 +62,7 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 	aux := &struct {
 		Author string `json:"createdBy"`
 		*Alias
+		CreatedByWebhookID string `json:"createdByWebhookId"`
 	}{
 		Alias: (*Alias)(m),
 	}
@@ -71,6 +72,7 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 	}
 
 	m.Author = &User{UserID: aux.Author}
+	m.CreatedByWebhook = &Webhook{WebhookID: aux.CreatedByWebhookID}
 
 	return nil
 }
