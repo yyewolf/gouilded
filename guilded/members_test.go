@@ -11,10 +11,6 @@ type serverMemberTest struct {
 	ServerMember *ServerMember `json:"serverMember,omitempty"`
 }
 
-type serverMemberSummaryTest struct {
-	ServerMemberSummary *ServerMemberSummary `json:"serverMemberSummary,omitempty"`
-}
-
 func TestServerMember_UnmarshallJSON(t *testing.T) {
 	sm := serverMemberTest{
 		ServerMember: &ServerMember{},
@@ -40,6 +36,10 @@ func TestServerMember_UnmarshallJSON(t *testing.T) {
 	assert.Equal(t, sm.ServerMember.Nickname, "Professor Chaos")
 }
 
+type serverMemberSummaryTest struct {
+	ServerMemberSummary *ServerMemberSummary `json:"serverMemberSummary,omitempty"`
+}
+
 func TestServerMemberSummary_UnmarshallJSON(t *testing.T) {
 	sms := serverMemberSummaryTest{
 		ServerMemberSummary: &ServerMemberSummary{},
@@ -60,4 +60,33 @@ func TestServerMemberSummary_UnmarshallJSON(t *testing.T) {
 
 	assert.Equal(t, sms.ServerMemberSummary.User.UserID, "Ann6LewA")
 	assert.Equal(t, sms.ServerMemberSummary.User.Name, "Leopold Stotch")
+}
+
+type serverMemberBanTest struct {
+	ServerMemberBan *ServerMemberBan
+}
+
+func TestServerMemberBan_UnmarshallJSON(t *testing.T) {
+	smb := serverMemberBanTest{
+		ServerMemberBan: &ServerMemberBan{},
+	}
+
+	data := []byte(`{
+		"user": {
+		  "id": "Ann6LewA",
+		  "type": "user",
+		  "name": "Leopold Stotch"
+		},
+		"reason": "More toxic than a poison Pokémon",
+		"createdAt": "2021-06-15T20:15:00.706Z",
+		"createdBy": "Ann6LewA"
+	  }`)
+
+	if err := smb.ServerMemberBan.UnmarshalJSON(data); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, smb.ServerMemberBan.CreatedBy.UserID, "Ann6LewA")
+	assert.Equal(t, smb.ServerMemberBan.User.UserID, "Ann6LewA")
+	assert.Equal(t, smb.ServerMemberBan.User.Name, "Leopold Stotch")
 }
