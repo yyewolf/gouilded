@@ -31,10 +31,10 @@ const (
 
 type (
 	// EventHandlerFunc is a function that is called when an event is received.
-	// EventHandlerFunc func(gatewayEventType EventType, sequenceNumber int, shardID int, event EventData)
+	EventHandlerFunc func(gatewayEventType EventType, sequenceNumber int, event EventData)
 
 	// CreateFunc is a type that is used to create a new Gateway(s).
-	// CreateFunc func(token string, eventHandlerFunc EventHandlerFunc, closeHandlerFUnc CloseHandlerFunc, opts ...ConfigOpt) Gateway
+	CreateFunc func(token string, eventHandlerFunc EventHandlerFunc, closeHandlerFUnc CloseHandlerFunc, opts ...ConfigOpt) Gateway
 
 	// CloseHandlerFunc is a function that is called when the Gateway is closed.
 	CloseHandlerFunc func(gateway Gateway, err error)
@@ -61,7 +61,7 @@ type Gateway interface {
 	// Send sends a message to the Guilded gateway with the opCode and data.
 	// If context is deadline exceeds, the message sending will be aborted.
 	// TODO :
-	// Send(ctx context.Context, op Opcode, data MessageData) error
+	Send(ctx context.Context, op Opcode, data MessageData) error
 
 	// Latency returns the latency of the Gateway.
 	// This is calculated by the time it takes to send a heartbeat and receive a heartbeat ack by Guilded.
