@@ -54,7 +54,7 @@ func TestChannel_UnmarshalJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, v.Channel.ID, "d2242862-401c-42f8-9ce2-0c75977475a6")
+	assert.Equal(t, v.Channel.ChannelID, "d2242862-401c-42f8-9ce2-0c75977475a6")
 	assert.Equal(t, v.Channel.Type, ChannelTypeTeam)
 	assert.Equal(t, v.Channel.Name, "general")
 }
