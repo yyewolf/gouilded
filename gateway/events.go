@@ -9,7 +9,7 @@ type EventData interface {
 
 // EventChatMessageCreated is the event sent by Guilded when a message is created.
 type EventChatMessageCreated struct {
-	// ServerID is the Server in which the event occured
+	// ServerID is the Server in which the event occurred
 	ServerID string `json:"serverId"`
 
 	// Message is the message that was created
