@@ -2,9 +2,17 @@ package gateway
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/yyewolf/gouilded/guilded"
 )
 
+// Status is the state that the client is currently in.
 type Status int
 
 // IsConnected returns whether the Gateway is connected.
@@ -17,7 +25,6 @@ func (s Status) IsConnected() bool {
 	}
 }
 
-// Indicates how far along the client is to connecting.
 const (
 	StatusUnconnected Status = iota
 	StatusConnecting
@@ -29,41 +36,137 @@ const (
 	StatusDisconnected
 )
 
-type (
-	// EventHandlerFunc is a function that is called when an event is received.
-	EventHandlerFunc func(gatewayEventType EventType, sequenceNumber int, event EventData)
+type Gateway struct {
+	config *Config
+	token  string
 
-	// CreateFunc is a type that is used to create a new Gateway(s).
-	CreateFunc func(token string, eventHandlerFunc EventHandlerFunc, closeHandlerFUnc CloseHandlerFunc, opts ...ConfigOpt) Gateway
+	conn            *websocket.Conn
+	connMu          sync.Mutex
+	heartbeatTicker *time.Ticker
+	status          Status
 
-	// CloseHandlerFunc is a function that is called when the Gateway is closed.
-	CloseHandlerFunc func(gateway Gateway, err error)
-)
+	heartbeatInterval     time.Duration
+	lastHeartbeatSent     time.Time
+	lastHeartbeatReceived time.Time
+}
 
-type Gateway interface {
-	// LastMessageReceived returns the last message id received by the Gateway.
-	LastMessageReceived() *int
+func (g *Gateway) Open(ctx context.Context) error {
+	g.connMu.Lock()
+	defer g.connMu.Unlock()
 
-	// Open connects this Gateway to the Guilded API
-	Open(ctx context.Context) error
+	// Check if we're already connected
+	if g.conn != nil {
+		return guilded.ErrGatewayAlreadyConnected
+	}
+	// Set the status to connecting
+	g.status = StatusConnecting
 
-	// Close gracefully closes the Gateway with the websocket.CloseNormalClosure code.
-	// If the context is done, the Gateway connection will be killed.
-	Close(ctx context.Context)
+	wsUrl := g.config.url
+	// dial with custom headers
+	headers := http.Header(make(map[string][]string))
+	headers.Set("Authorization", fmt.Sprintf("Bearer %s", g.token))
+	headers.Set("User-Agent", fmt.Sprintf("gouilded-%s", g.config.version))
+	headers.Set("guilded-last-message-id", g.config.lastID)
+	conn, rs, err := websocket.DefaultDialer.DialContext(ctx, wsUrl, headers)
+	if err != nil {
+		g.Close(ctx)
+		// body := "null"
+		if rs != nil && rs.Body != nil {
+			defer func() {
+				_ = rs.Body.Close()
+			}()
+			// rawBody, bErr := io.ReadAll(rs.Body)
+			_, bErr := io.ReadAll(rs.Body)
+			if bErr != nil {
+				// TODO: log error while reading response body
+			}
+			// body = string(rawBody)
+		}
 
-	// CloseWithCode closes the Gateway with the given code & message.
-	// If the context is done, the Gateway connection will be killed.
-	CloseWithCode(ctx context.Context, code int, message string)
+		// TODO: log error while connecting to gateway
+		return err
+	}
 
-	// Status returns the Status of the Gateway.
-	Status() Status
+	g.conn = conn
+	g.status = StatusWaitingForHello
 
-	// Send sends a message to the Guilded gateway with the opCode and data.
-	// If context is deadline exceeds, the message sending will be aborted.
-	// TODO :
-	Send(ctx context.Context, op Opcode, data MessageData) error
+	// go g.readLoop(ctx)
 
-	// Latency returns the latency of the Gateway.
-	// This is calculated by the time it takes to send a heartbeat and receive a heartbeat ack by Guilded.
-	Latency() time.Duration
+	return nil
+}
+
+func (g *Gateway) Close(ctx context.Context) {
+	g.CloseWithCode(ctx, websocket.CloseNormalClosure, "Shutting down")
+}
+
+func (g *Gateway) CloseWithCode(ctx context.Context, code int, message string) {
+	if g.heartbeatTicker != nil {
+		// TODO: Log closing heartbeat ticker
+		g.heartbeatTicker.Stop()
+		g.heartbeatTicker = nil
+	}
+
+	g.connMu.Lock()
+	defer g.connMu.Unlock()
+	if g.conn != nil {
+		g.config.ratelimiter.Close(ctx)
+		// TODO: Log closing connection with code & message
+		if err := g.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(code, message)); err != nil && err != websocket.ErrCloseSent {
+			// TODO: Log error while closing connection
+		}
+		_ = g.conn.Close()
+		g.conn = nil
+
+		// clear resume data as we closed gracefully
+		if code == websocket.CloseNormalClosure || code == websocket.CloseGoingAway {
+			g.config.lastID = ""
+		}
+	}
+}
+
+func (g *Gateway) Status() Status {
+	g.connMu.Lock()
+	defer g.connMu.Unlock()
+	return g.status
+}
+
+func (g *Gateway) send(ctx context.Context, messageType int, data []byte) error {
+	g.connMu.Lock()
+	defer g.connMu.Unlock()
+	if g.conn == nil {
+		return guilded.ErrGatewayNotConnected
+	}
+
+	if err := g.config.ratelimiter.Wait(ctx); err != nil {
+		return err
+	}
+
+	defer g.config.ratelimiter.Unlock()
+	// TODO: Log sending message
+	return g.conn.WriteMessage(messageType, data)
+}
+
+func (g *Gateway) reconnectTry(ctx context.Context, try int, delay time.Duration) error {
+	if try >= g.config.maxReconnectTries-1 {
+		return fmt.Errorf("failed to reconnect. exceeded max reconnect tries of %d reached", g.config.maxReconnectTries)
+	}
+	timer := time.NewTimer(time.Duration(try) * delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		timer.Stop()
+		return ctx.Err()
+	case <-timer.C:
+	}
+
+	// TODO: log reconnecting
+	if err := g.Open(ctx); err != nil {
+		if err == guilded.ErrGatewayAlreadyConnected {
+			return err
+		}
+		// TODO: log error while reconnecting
+		g.status = StatusDisconnected
+		return g.reconnectTry(ctx, try+1, delay)
+	}
+	return nil
 }
